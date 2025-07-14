@@ -86,3 +86,4 @@ backend/sam_vit_h_4b8939.pth
 
 # Ignore backend virtual environment
 backend/venv/
+.env

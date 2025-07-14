@@ -1,15 +1,29 @@
-# Core Flask backend dependencies
+# Enhanced AI Dataset Generator - Backend Dependencies
+# Implementing all techniques from the LoRA paper
+
+# Core Flask backend
 Flask==3.0.0
 Flask-CORS==4.0.0
 Werkzeug==3.0.1
 requests==2.31.0
 
-# Basic image processing (optional for this pipeline)
+# Enhanced image processing for advanced augmentation
 Pillow>=10.0.0
+numpy>=1.24.0
 
-# Only install ML packages if you need local processing
-# For now, we're using RunPod for all AI tasks, so these are optional:
-# numpy>=1.25.0
+# Additional dependencies for enhanced pipeline
+typing-extensions>=4.0.0
+
+# For RunPod API integration and enhanced features
+# (All AI processing happens on RunPod, not locally)
+
+# Optional: For local development and testing
 # torch>=2.0.0
-# transformers>=4.35.0
-# diffusers>=0.24.0
+# torchvision>=0.15.0
+# diffusers>=0.21.0
+# transformers>=4.25.0
+# accelerate>=0.20.0
+# safetensors>=0.3.0
+
+# Note: The heavy AI dependencies (torch, diffusers, etc.) should be 
+# installed on your RunPod PyTorch pod, not in this local backend.

@@ -49,20 +49,6 @@
             padding: 40px;
         }
 
-        .step {
-            display: none;
-            animation: fadeIn 0.5s ease-in;
-        }
-
-        .step.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         .upload-area {
             border: 3px dashed #4facfe;
             border-radius: 15px;
@@ -206,6 +192,7 @@
 
         .progress-container {
             margin-top: 30px;
+            display: none;
         }
 
         .progress-bar {
@@ -249,11 +236,6 @@
             font-size: 1.1em;
             color: #333;
             margin-bottom: 10px;
-        }
-
-        .status-detail {
-            color: #666;
-            font-size: 0.95em;
         }
 
         .results-section {
@@ -322,6 +304,29 @@
             overflow-y: auto;
             margin-top: 20px;
         }
+
+        .pipeline-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #4facfe;
+        }
+
+        .pipeline-info h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .pipeline-info ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .pipeline-info p {
+            margin-top: 10px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -359,25 +364,26 @@
                     <input type="number" id="numImages" class="form-input" value="10" min="5" max="50">
                 </div>
                 
-                <div class="pipeline-info" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <div class="pipeline-info">
                     <h4>What this does:</h4>
-                    <ol style="margin-left: 20px; margin-top: 10px;">
-                        <li>Train a LoRA model on your uploaded images</li>
-                        <li>Generate new images using your trained model</li>
-                        <li>Create a downloadable dataset</li>
+                    <ol>
+                        <li><strong>Train LoRA:</strong> Creates a custom model from your images</li>
+                        <li><strong>Generate Images:</strong> Creates new images using your trained model</li>
+                        <li><strong>SAM Segmentation:</strong> Creates masks for each generated image</li>
+                        <li><strong>Package Dataset:</strong> Bundles everything for download</li>
                     </ol>
-                    <p style="margin-top: 10px; color: #666;"><strong>Estimated time:</strong> 5-10 minutes</p>
+                    <p><strong>Estimated time:</strong> 10-15 minutes</p>
                 </div>
             </section>
 
             <!-- Pipeline Controls -->
             <section class="pipeline-section">
-                <h2>LoRA Training & Generation</h2>
+                <h2>AI Pipeline</h2>
                 <div class="pipeline-controls">
                     <button id="generateBtn" class="btn" onclick="startPipeline()">
-                        🚀 Start LoRA Training
+                        🚀 Start AI Pipeline
                     </button>
-                    <button class="btn test-btn" onclick="datasetGenerator.testBackendConnection()">
+                    <button class="btn test-btn" onclick="testConnection()">
                         🧪 Test Connection
                     </button>
                     <button class="btn" onclick="resetPipeline()">
@@ -386,13 +392,14 @@
                 </div>
                 
                 <!-- Progress Display -->
-                <div id="progressContainer" class="progress-container" style="display: none;">
+                <div id="progressContainer" class="progress-container">
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill"></div>
                     </div>
                     <div class="status-text">
                         Progress: <span id="progressText">0%</span>
                     </div>
+                    <div class="status-text" id="statusMessage">Waiting to start...</div>
                     <div class="log-output" id="logOutput"></div>
                 </div>
             </section>
@@ -403,16 +410,15 @@
     </div>
 
     <script>
-        // Configuration - Direct RunPod Connection
+        // AI Dataset Generator - Simplified Frontend
         class DatasetGenerator {
             constructor() {
                 this.uploadedFiles = [];
                 this.currentJob = null;
-                this.backendUrl = 'https://1cdd361c2vag8u-8888.proxy.runpod.net';
-                this.generatedImages = [];
+                this.backendUrl = 'http://localhost:5000';
                 
                 this.initializeEventListeners();
-                this.testBackendConnection();
+                this.testConnection();
             }
 
             initializeEventListeners() {
@@ -445,14 +451,14 @@
                 });
             }
 
-            async testBackendConnection() {
+            async testConnection() {
                 try {
                     this.logMessage('🔍 Testing backend connection...');
-                    const response = await fetch(`${this.backendUrl}/health`);
+                    const response = await fetch(`${this.backendUrl}/api/health`);
                     
                     if (response.ok) {
                         const data = await response.json();
-                        this.showStatus(`✅ Backend connected: ${data.gpu || 'GPU Available'}`, 'success');
+                        this.showStatus(`✅ Backend connected: ${data.backend}`, 'success');
                         this.logMessage('✅ Backend connection successful');
                         console.log('Backend health:', data);
                     } else {
@@ -525,207 +531,152 @@
                 }
 
                 try {
-                    this.showStatus('Starting LoRA training...', 'info');
+                    this.showStatus('Starting AI pipeline...', 'info');
                     this.showProgress(true);
                     this.setProgress(0);
-                    this.logMessage('🎯 Starting LoRA training...');
+                    this.logMessage('🎯 Starting AI Dataset Generator...');
                     this.logMessage(`📸 Training on ${this.uploadedFiles.length} images`);
                     this.logMessage(`🎨 Concept: ${conceptName}`);
                     
-                    // Step 1: Train LoRA model
-                    await this.trainLoRAModel(conceptName);
-                    
-                    // Step 2: Generate images
-                    await this.generateImages(conceptName, numImages);
-                    
-                    // Step 3: Complete
-                    this.handleCompletion();
+                    // Prepare form data
+                    const formData = new FormData();
+                    this.uploadedFiles.forEach(file => {
+                        formData.append('images', file);
+                    });
+                    formData.append('concept_name', conceptName);
+                    formData.append('num_images', numImages);
 
-                } catch (error) {
-                    this.showStatus(`Pipeline failed: ${error.message}`, 'error');
-                    this.logMessage(`❌ Pipeline failed: ${error.message}`);
-                    console.error('Pipeline error:', error);
-                }
-            }
-
-            async trainLoRAModel(conceptName) {
-                try {
-                    this.setProgress(10);
-                    this.logMessage('🔥 Training LoRA model...');
-                    
-                    // Convert files to base64
-                    const trainingImages = [];
-                    for (const file of this.uploadedFiles) {
-                        const base64 = await this.fileToBase64(file);
-                        trainingImages.push(base64);
-                    }
-
-                    const response = await fetch(`${this.backendUrl}/train-lora`, {
+                    // Start pipeline
+                    const response = await fetch(`${this.backendUrl}/api/generate-dataset`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            concept_name: conceptName,
-                            training_images: trainingImages,
-                            num_steps: 200,
-                            learning_rate: 1e-4
-                        })
+                        body: formData
                     });
 
                     if (!response.ok) {
-                        throw new Error(`Training failed: ${response.status}`);
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `HTTP ${response.status}`);
                     }
 
                     const result = await response.json();
-                    this.loraPath = result.lora_url;
-                    this.setProgress(50);
-                    this.logMessage(`✅ LoRA training completed: ${result.message}`);
+                    this.currentJob = result.job_id;
                     
+                    this.showStatus(`Pipeline started! Job ID: ${result.job_id}`, 'success');
+                    this.logMessage(`✅ Pipeline started with Job ID: ${result.job_id}`);
+                    
+                    // Start monitoring
+                    this.monitorProgress();
+
                 } catch (error) {
-                    this.logMessage(`❌ LoRA training failed: ${error.message}`);
-                    throw error;
+                    this.showStatus(`Failed to start pipeline: ${error.message}`, 'error');
+                    this.logMessage(`❌ Pipeline failed: ${error.message}`);
+                    console.error('Pipeline start error:', error);
                 }
             }
 
-            async generateImages(conceptName, numImages) {
+            async monitorProgress() {
+                if (!this.currentJob) return;
+
                 try {
-                    this.logMessage(`🎨 Generating ${numImages} images...`);
-                    this.generatedImages = [];
+                    const response = await fetch(`${this.backendUrl}/api/job-status/${this.currentJob}`);
                     
-                    for (let i = 0; i < numImages; i++) {
-                        const progress = 50 + (i / numImages) * 45;
-                        this.setProgress(progress);
-                        this.logMessage(`🖼️ Generating image ${i + 1}/${numImages}...`);
-                        
-                        const prompt = `a photo of ${conceptName}, professional photography, high quality, detailed`;
-                        
-                        const response = await fetch(`${this.backendUrl}/generate`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                prompt: prompt,
-                                negative_prompt: 'blurry, low quality, distorted, ugly',
-                                num_inference_steps: 30,
-                                guidance_scale: 7.5,
-                                lora_path: this.loraPath,
-                                concept_name: conceptName
-                            })
-                        });
-
-                        if (response.ok) {
-                            const result = await response.json();
-                            if (result.status === 'success') {
-                                this.generatedImages.push({
-                                    id: i + 1,
-                                    prompt: result.prompt,
-                                    image: result.image
-                                });
-                                this.logMessage(`✅ Generated image ${i + 1}/${numImages}`);
-                            }
-                        } else {
-                            this.logMessage(`❌ Failed to generate image ${i + 1}`);
-                        }
-                        
-                        // Small delay between generations
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    if (!response.ok) {
+                        throw new Error(`Status check failed: ${response.status}`);
                     }
+
+                    const status = await response.json();
                     
-                    this.setProgress(95);
-                    this.logMessage(`✅ Generated ${this.generatedImages.length}/${numImages} images`);
-                    
+                    // Update UI
+                    this.setProgress(status.progress || 0);
+                    this.showStatus(status.message || status.status, 'info');
+                    this.updateStatusMessage(status.message || status.status);
+
+                    if (status.status === 'complete') {
+                        this.handleCompletion(status.result);
+                    } else if (status.status === 'failed') {
+                        this.showStatus(`Pipeline failed: ${status.error}`, 'error');
+                        this.logMessage(`❌ Pipeline failed: ${status.error}`);
+                        this.showProgress(false);
+                    } else {
+                        // Continue monitoring
+                        setTimeout(() => this.monitorProgress(), 3000);
+                    }
+
                 } catch (error) {
-                    this.logMessage(`❌ Image generation failed: ${error.message}`);
-                    throw error;
+                    console.error('Progress monitoring error:', error);
+                    setTimeout(() => this.monitorProgress(), 5000); // Retry after longer delay
                 }
             }
 
-            handleCompletion() {
+            handleCompletion(result) {
+                this.showStatus('🎉 AI Pipeline completed successfully!', 'success');
                 this.setProgress(100);
-                this.showStatus('🎉 LoRA training and generation completed!', 'success');
+                this.updateStatusMessage('🎉 Dataset creation complete!');
                 this.logMessage('🎉 Pipeline completed successfully!');
-                this.displayResults();
+                
+                console.log('Pipeline result:', result);
+                
+                // Show results
+                this.displayResults(result);
+                
                 this.showProgress(false);
             }
 
-            displayResults() {
+            displayResults(result) {
                 const resultsContainer = document.getElementById('results');
                 if (!resultsContainer) return;
 
                 resultsContainer.innerHTML = `
                     <div class="results-section">
-                        <h3>Generated Dataset 🎉</h3>
+                        <h3>Dataset Created Successfully! 🎉</h3>
                         <div class="result-stats">
                             <div class="stat-item">
-                                <strong>Generated Images:</strong> ${this.generatedImages.length}
+                                <strong>Total Images:</strong> ${result.total_images || 0}
                             </div>
                             <div class="stat-item">
-                                <strong>Training Images:</strong> ${this.uploadedFiles.length}
+                                <strong>Segmented Images:</strong> ${result.segmented_images || 0}
                             </div>
                             <div class="stat-item">
-                                <strong>Concept:</strong> ${document.getElementById('conceptName').value}
+                                <strong>Concept:</strong> ${result.concept_name || 'Unknown'}
                             </div>
                         </div>
                         
-                        <div class="results-grid" id="resultsGrid"></div>
+                        ${result.preview_images ? this.createPreviewHtml(result.preview_images) : ''}
                         
                         <div class="download-section">
-                            <button id="downloadBtn" class="btn download-btn" onclick="datasetGenerator.downloadDataset()">
-                                📁 Download Dataset
+                            <button id="downloadBtn" class="btn download-btn" onclick="datasetGenerator.downloadDataset('${result.dataset_id}')">
+                                📁 Download Complete Dataset
                             </button>
                         </div>
                     </div>
                 `;
-
-                // Display generated images
-                const resultsGrid = document.getElementById('resultsGrid');
-                this.generatedImages.forEach(img => {
-                    const resultItem = document.createElement('div');
-                    resultItem.className = 'result-item';
-                    resultItem.innerHTML = `
-                        <img src="data:image/png;base64,${img.image}" alt="Generated ${img.id}">
-                        <p>Image ${img.id}</p>
-                    `;
-                    resultsGrid.appendChild(resultItem);
-                });
             }
 
-            async downloadDataset() {
+            createPreviewHtml(previewImages) {
+                const previewHtml = previewImages.slice(0, 4).map((img, index) => `
+                    <div class="preview-item">
+                        <img src="${img.image_url}" alt="Preview ${index + 1}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;">
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="preview-section">
+                        <h4>Preview Images:</h4>
+                        <div class="preview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0;">
+                            ${previewHtml}
+                        </div>
+                    </div>
+                `;
+            }
+
+            async downloadDataset(datasetId) {
                 try {
-                    this.logMessage('📦 Creating dataset package...');
-                    
-                    // Create a simple text-based dataset info
-                    const datasetInfo = {
-                        concept_name: document.getElementById('conceptName').value,
-                        num_images: this.generatedImages.length,
-                        training_images: this.uploadedFiles.length,
-                        generated_at: new Date().toISOString()
-                    };
-                    
-                    // Create download link for images
-                    const link = document.createElement('a');
-                    link.href = `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(datasetInfo, null, 2))}`;
-                    link.download = `${datasetInfo.concept_name}_dataset_info.json`;
-                    link.click();
-                    
-                    this.logMessage('📥 Dataset info downloaded. Images can be saved individually.');
-                    this.showStatus('Dataset info downloaded successfully!', 'success');
-                    
+                    this.logMessage('📦 Starting dataset download...');
+                    window.open(`${this.backendUrl}/api/download-dataset/${datasetId}`, '_blank');
+                    this.showStatus('Download started...', 'info');
                 } catch (error) {
-                    this.logMessage(`❌ Download failed: ${error.message}`);
                     this.showStatus(`Download failed: ${error.message}`, 'error');
+                    this.logMessage(`❌ Download failed: ${error.message}`);
                 }
-            }
-
-            fileToBase64(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = () => resolve(reader.result.split(',')[1]);
-                    reader.onerror = error => reject(error);
-                });
             }
 
             setProgress(percent) {
@@ -745,6 +696,13 @@
                 const progressContainer = document.getElementById('progressContainer');
                 if (progressContainer) {
                     progressContainer.style.display = show ? 'block' : 'none';
+                }
+            }
+
+            updateStatusMessage(message) {
+                const statusMessage = document.getElementById('statusMessage');
+                if (statusMessage) {
+                    statusMessage.textContent = message;
                 }
             }
 
@@ -771,8 +729,7 @@
 
             reset() {
                 this.uploadedFiles = [];
-                this.generatedImages = [];
-                this.loraPath = null;
+                this.currentJob = null;
                 this.displayUploadedFiles();
                 this.showProgress(false);
                 this.setProgress(0);
@@ -800,6 +757,12 @@
         function startPipeline() {
             if (datasetGenerator) {
                 datasetGenerator.startPipeline();
+            }
+        }
+
+        function testConnection() {
+            if (datasetGenerator) {
+                datasetGenerator.testConnection();
             }
         }
 
