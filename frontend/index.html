@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Dataset Generator - LoRA Training</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .step {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .upload-area {
+            border: 3px dashed #4facfe;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #f8faff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover {
+            border-color: #00f2fe;
+            background: #f0f8ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #00f2fe;
+            background: #e6f3ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #4facfe;
+        }
+
+        .upload-text {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .upload-subtext {
+            color: #666;
+            font-size: 1em;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .uploaded-files {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4facfe;
+        }
+
+        .file-icon {
+            margin-right: 15px;
+            font-size: 1.5em;
+            color: #4facfe;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-right: 15px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn.test-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .btn.download-btn {
+            background: linear-gradient(135deg, #6f42c1, #e83e8c);
+        }
+
+        .progress-container {
+            margin-top: 30px;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.4),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .status-text {
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .status-detail {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .results-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .result-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .result-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+        .log-output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 AI Dataset Generator</h1>
+            <p>Train custom LoRA models and generate high-quality datasets</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Status Display -->
+            <div id="status" class="status info">Ready to start</div>
+
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <h2>Upload Training Images</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p class="upload-text">Drag and drop images here or click to browse</p>
+                    <p class="upload-subtext">3-10 images required (JPG, PNG, WebP)</p>
+                    <input type="file" id="fileInput" multiple accept="image/*" class="file-input">
+                </div>
+                <div class="uploaded-files" id="uploadedFiles"></div>
+            </section>
+
+            <!-- Configuration Section -->
+            <section class="config-section">
+                <h2>Configuration</h2>
+                <div class="form-group">
+                    <label class="form-label" for="conceptName">Concept Name:</label>
+                    <input type="text" id="conceptName" class="form-input" placeholder="e.g., 'NASA lunar simulation', 'my dog Max', 'vintage car'" value="">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="numImages">Number of Images to Generate:</label>
+                    <input type="number" id="numImages" class="form-input" value="10" min="5" max="50">
+                </div>
+                
+                <div class="pipeline-info" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <h4>What this does:</h4>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Train a LoRA model on your uploaded images</li>
+                        <li>Generate new images using your trained model</li>
+                        <li>Create a downloadable dataset</li>
+                    </ol>
+                    <p style="margin-top: 10px; color: #666;"><strong>Estimated time:</strong> 5-10 minutes</p>
+                </div>
+            </section>
+
+            <!-- Pipeline Controls -->
+            <section class="pipeline-section">
+                <h2>LoRA Training & Generation</h2>
+                <div class="pipeline-controls">
+                    <button id="generateBtn" class="btn" onclick="startPipeline()">
+                        🚀 Start LoRA Training
+                    </button>
+                    <button class="btn test-btn" onclick="datasetGenerator.testBackendConnection()">
+                        🧪 Test Connection
+                    </button>
+                    <button class="btn" onclick="resetPipeline()">
+                        🔄 Reset
+                    </button>
+                </div>
+                
+                <!-- Progress Display -->
+                <div id="progressContainer" class="progress-container" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="status-text">
+                        Progress: <span id="progressText">0%</span>
+                    </div>
+                    <div class="log-output" id="logOutput"></div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - Direct RunPod Connection
+        class DatasetGenerator {
+            constructor() {
+                this.uploadedFiles = [];
+                this.currentJob = null;
+                this.backendUrl = 'https://1cdd361c2vag8u-8888.proxy.runpod.net';
+                this.generatedImages = [];
+                
+                this.initializeEventListeners();
+                this.testBackendConnection();
+            }
+
+            initializeEventListeners() {
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+
+                // File upload drag and drop
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    const files = Array.from(e.dataTransfer.files);
+                    this.handleFiles(files);
+                });
+
+                uploadArea.addEventListener('click', () => {
+                    fileInput.click();
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    this.handleFiles(Array.from(e.target.files));
+                });
+            }
+
+            async testBackendConnection() {
+                try {
+                    this.logMessage('🔍 Testing backend connection...');
+                    const response = await fetch(`${this.backendUrl}/health`);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.showStatus(`✅ Backend connected: ${data.gpu || 'GPU Available'}`, 'success');
+                        this.logMessage('✅ Backend connection successful');
+                        console.log('Backend health:', data);
+                    } else {
+                        throw new Error(`Backend returned ${response.status}`);
+                    }
+                } catch (error) {
+                    this.showStatus(`❌ Backend connection failed: ${error.message}`, 'error');
+                    this.logMessage(`❌ Backend connection failed: ${error.message}`);
+                    console.error('Backend connection failed:', error);
+                }
+            }
+
+            handleFiles(files) {
+                const imageFiles = files.filter(file => file.type.startsWith('image/'));
+                
+                if (imageFiles.length === 0) {
+                    this.showStatus('Please select image files', 'warning');
+                    return;
+                }
+
+                if (this.uploadedFiles.length + imageFiles.length > 10) {
+                    this.showStatus('Maximum 10 files allowed', 'warning');
+                    return;
+                }
+
+                this.uploadedFiles = [...this.uploadedFiles, ...imageFiles];
+                this.displayUploadedFiles();
+                this.showStatus(`Uploaded ${imageFiles.length} images (${this.uploadedFiles.length} total)`, 'info');
+            }
+
+            displayUploadedFiles() {
+                const container = document.getElementById('uploadedFiles');
+                if (!container) return;
+
+                container.innerHTML = '';
+                
+                this.uploadedFiles.forEach((file, index) => {
+                    const fileDiv = document.createElement('div');
+                    fileDiv.className = 'file-item';
+                    fileDiv.innerHTML = `
+                        <div class="file-icon">📷</div>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${(file.size / 1024).toFixed(1)} KB</div>
+                        </div>
+                        <button onclick="datasetGenerator.removeFile(${index})" class="btn" style="padding: 5px 10px; margin: 0;">×</button>
+                    `;
+                    container.appendChild(fileDiv);
+                });
+            }
+
+            removeFile(index) {
+                this.uploadedFiles.splice(index, 1);
+                this.displayUploadedFiles();
+                this.showStatus(`Removed file. ${this.uploadedFiles.length} files remaining`, 'info');
+            }
+
+            async startPipeline() {
+                if (this.uploadedFiles.length < 3) {
+                    this.showStatus('Please upload at least 3 training images', 'warning');
+                    return;
+                }
+
+                const conceptName = document.getElementById('conceptName')?.value?.trim();
+                const numImages = parseInt(document.getElementById('numImages')?.value || 10);
+
+                if (!conceptName) {
+                    this.showStatus('Please enter a concept name', 'warning');
+                    return;
+                }
+
+                try {
+                    this.showStatus('Starting LoRA training...', 'info');
+                    this.showProgress(true);
+                    this.setProgress(0);
+                    this.logMessage('🎯 Starting LoRA training...');
+                    this.logMessage(`📸 Training on ${this.uploadedFiles.length} images`);
+                    this.logMessage(`🎨 Concept: ${conceptName}`);
+                    
+                    // Step 1: Train LoRA model
+                    await this.trainLoRAModel(conceptName);
+                    
+                    // Step 2: Generate images
+                    await this.generateImages(conceptName, numImages);
+                    
+                    // Step 3: Complete
+                    this.handleCompletion();
+
+                } catch (error) {
+                    this.showStatus(`Pipeline failed: ${error.message}`, 'error');
+                    this.logMessage(`❌ Pipeline failed: ${error.message}`);
+                    console.error('Pipeline error:', error);
+                }
+            }
+
+            async trainLoRAModel(conceptName) {
+                try {
+                    this.setProgress(10);
+                    this.logMessage('🔥 Training LoRA model...');
+                    
+                    // Convert files to base64
+                    const trainingImages = [];
+                    for (const file of this.uploadedFiles) {
+                        const base64 = await this.fileToBase64(file);
+                        trainingImages.push(base64);
+                    }
+
+                    const response = await fetch(`${this.backendUrl}/train-lora`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            concept_name: conceptName,
+                            training_images: trainingImages,
+                            num_steps: 200,
+                            learning_rate: 1e-4
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Training failed: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    this.loraPath = result.lora_url;
+                    this.setProgress(50);
+                    this.logMessage(`✅ LoRA training completed: ${result.message}`);
+                    
+                } catch (error) {
+                    this.logMessage(`❌ LoRA training failed: ${error.message}`);
+                    throw error;
+                }
+            }
+
+            async generateImages(conceptName, numImages) {
+                try {
+                    this.logMessage(`🎨 Generating ${numImages} images...`);
+                    this.generatedImages = [];
+                    
+                    for (let i = 0; i < numImages; i++) {
+                        const progress = 50 + (i / numImages) * 45;
+                        this.setProgress(progress);
+                        this.logMessage(`🖼️ Generating image ${i + 1}/${numImages}...`);
+                        
+                        const prompt = `a photo of ${conceptName}, professional photography, high quality, detailed`;
+                        
+                        const response = await fetch(`${this.backendUrl}/generate`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                prompt: prompt,
+                                negative_prompt: 'blurry, low quality, distorted, ugly',
+                                num_inference_steps: 30,
+                                guidance_scale: 7.5,
+                                lora_path: this.loraPath,
+                                concept_name: conceptName
+                            })
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.status === 'success') {
+                                this.generatedImages.push({
+                                    id: i + 1,
+                                    prompt: result.prompt,
+                                    image: result.image
+                                });
+                                this.logMessage(`✅ Generated image ${i + 1}/${numImages}`);
+                            }
+                        } else {
+                            this.logMessage(`❌ Failed to generate image ${i + 1}`);
+                        }
+                        
+                        // Small delay between generations
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                    
+                    this.setProgress(95);
+                    this.logMessage(`✅ Generated ${this.generatedImages.length}/${numImages} images`);
+                    
+                } catch (error) {
+                    this.logMessage(`❌ Image generation failed: ${error.message}`);
+                    throw error;
+                }
+            }
+
+            handleCompletion() {
+                this.setProgress(100);
+                this.showStatus('🎉 LoRA training and generation completed!', 'success');
+                this.logMessage('🎉 Pipeline completed successfully!');
+                this.displayResults();
+                this.showProgress(false);
+            }
+
+            displayResults() {
+                const resultsContainer = document.getElementById('results');
+                if (!resultsContainer) return;
+
+                resultsContainer.innerHTML = `
+                    <div class="results-section">
+                        <h3>Generated Dataset 🎉</h3>
+                        <div class="result-stats">
+                            <div class="stat-item">
+                                <strong>Generated Images:</strong> ${this.generatedImages.length}
+                            </div>
+                            <div class="stat-item">
+                                <strong>Training Images:</strong> ${this.uploadedFiles.length}
+                            </div>
+                            <div class="stat-item">
+                                <strong>Concept:</strong> ${document.getElementById('conceptName').value}
+                            </div>
+                        </div>
+                        
+                        <div class="results-grid" id="resultsGrid"></div>
+                        
+                        <div class="download-section">
+                            <button id="downloadBtn" class="btn download-btn" onclick="datasetGenerator.downloadDataset()">
+                                📁 Download Dataset
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Display generated images
+                const resultsGrid = document.getElementById('resultsGrid');
+                this.generatedImages.forEach(img => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'result-item';
+                    resultItem.innerHTML = `
+                        <img src="data:image/png;base64,${img.image}" alt="Generated ${img.id}">
+                        <p>Image ${img.id}</p>
+                    `;
+                    resultsGrid.appendChild(resultItem);
+                });
+            }
+
+            async downloadDataset() {
+                try {
+                    this.logMessage('📦 Creating dataset package...');
+                    
+                    // Create a simple text-based dataset info
+                    const datasetInfo = {
+                        concept_name: document.getElementById('conceptName').value,
+                        num_images: this.generatedImages.length,
+                        training_images: this.uploadedFiles.length,
+                        generated_at: new Date().toISOString()
+                    };
+                    
+                    // Create download link for images
+                    const link = document.createElement('a');
+                    link.href = `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(datasetInfo, null, 2))}`;
+                    link.download = `${datasetInfo.concept_name}_dataset_info.json`;
+                    link.click();
+                    
+                    this.logMessage('📥 Dataset info downloaded. Images can be saved individually.');
+                    this.showStatus('Dataset info downloaded successfully!', 'success');
+                    
+                } catch (error) {
+                    this.logMessage(`❌ Download failed: ${error.message}`);
+                    this.showStatus(`Download failed: ${error.message}`, 'error');
+                }
+            }
+
+            fileToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = error => reject(error);
+                });
+            }
+
+            setProgress(percent) {
+                const progressFill = document.getElementById('progressFill');
+                const progressText = document.getElementById('progressText');
+                
+                if (progressFill) {
+                    progressFill.style.width = `${percent}%`;
+                }
+                
+                if (progressText) {
+                    progressText.textContent = `${Math.round(percent)}%`;
+                }
+            }
+
+            showProgress(show) {
+                const progressContainer = document.getElementById('progressContainer');
+                if (progressContainer) {
+                    progressContainer.style.display = show ? 'block' : 'none';
+                }
+            }
+
+            showStatus(message, type = 'info') {
+                const statusElement = document.getElementById('status');
+                if (statusElement) {
+                    statusElement.textContent = message;
+                    statusElement.className = `status ${type}`;
+                }
+                
+                console.log(`[${type.toUpperCase()}] ${message}`);
+            }
+
+            logMessage(message) {
+                const logOutput = document.getElementById('logOutput');
+                if (logOutput) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    const logEntry = `[${timestamp}] ${message}\n`;
+                    logOutput.textContent += logEntry;
+                    logOutput.scrollTop = logOutput.scrollHeight;
+                }
+                console.log(message);
+            }
+
+            reset() {
+                this.uploadedFiles = [];
+                this.generatedImages = [];
+                this.loraPath = null;
+                this.displayUploadedFiles();
+                this.showProgress(false);
+                this.setProgress(0);
+                this.showStatus('Ready to start', 'info');
+                
+                const resultsContainer = document.getElementById('results');
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = '';
+                }
+                
+                const logOutput = document.getElementById('logOutput');
+                if (logOutput) {
+                    logOutput.textContent = '';
+                }
+            }
+        }
+
+        // Initialize when DOM is loaded
+        let datasetGenerator;
+        document.addEventListener('DOMContentLoaded', () => {
+            datasetGenerator = new DatasetGenerator();
+        });
+
+        // Global functions for onclick handlers
+        function startPipeline() {
+            if (datasetGenerator) {
+                datasetGenerator.startPipeline();
+            }
+        }
+
+        function resetPipeline() {
+            if (datasetGenerator) {
+                datasetGenerator.reset();
+            }
+        }
+    </script>
+</body>
+</html>

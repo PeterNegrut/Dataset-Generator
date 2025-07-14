@@ -1,0 +1,15 @@
+# Core Flask backend dependencies
+Flask==3.0.0
+Flask-CORS==4.0.0
+Werkzeug==3.0.1
+requests==2.31.0
+
+# Basic image processing (optional for this pipeline)
+Pillow>=10.0.0
+
+# Only install ML packages if you need local processing
+# For now, we're using RunPod for all AI tasks, so these are optional:
+# numpy>=1.25.0
+# torch>=2.0.0
+# transformers>=4.35.0
+# diffusers>=0.24.0
