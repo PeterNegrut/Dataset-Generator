@@ -12,12 +12,12 @@ apt update && apt install -y git curl wget
 # Clone repository
 echo "📥 Cloning repository..."
 cd /root
-if [ ! -d "dataset-generator-3" ]; then
+if [ ! -d "dataset-generator" ]; then
     # Clone the repository
-    git clone https://github.com/PeterNegrut/dataset-generator-3.git
-    cd dataset-generator-3
+    git clone https://github.com/PeterNegrut/dataset-generator.git
+    cd dataset-generator
 else
-    cd dataset-generator-3
+    cd dataset-generator
     echo "📄 Repository exists, pulling latest changes..."
     git pull
 fi
@@ -36,8 +36,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/dataset-generator-3
-ExecStart=/root/dataset-generator-3/start_server.sh
+WorkingDirectory=/root/dataset-generator
+ExecStart=/root/dataset-generator/start_server.sh
 Restart=always
 RestartSec=3
 
@@ -49,7 +49,7 @@ echo ""
 echo "✅ RunPod setup complete!"
 echo ""
 echo "🚀 Starting server automatically..."
-cd /root/dataset-generator-3
+cd /root/dataset-generator
 ./start_server.sh &
 SERVER_PID=$!
 sleep 3
