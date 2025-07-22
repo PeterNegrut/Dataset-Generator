@@ -14,7 +14,7 @@ echo "📥 Cloning repository..."
 cd /root
 if [ ! -d "dataset-generator-3" ]; then
     # Clone the repository
-    git clone https://github.com/peterwillcocks/dataset-generator-3.git
+    git clone https://github.com/PeterNegrut/dataset-generator-3.git
     cd dataset-generator-3
 else
     cd dataset-generator-3
