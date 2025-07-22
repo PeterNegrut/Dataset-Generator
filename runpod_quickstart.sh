@@ -9,15 +9,16 @@ echo "==================================="
 echo "📦 Updating system..."
 apt update && apt install -y git curl wget
 
-# Clone repository (replace with your actual repo URL)
+# Clone repository
 echo "📥 Cloning repository..."
 cd /root
-if [ ! -d "dataset-generator" ]; then
-    # Replace this URL with your actual repository
-    git clone https://github.com/YOUR_USERNAME/dataset-generator.git
-    cd dataset-generator
+if [ ! -d "dataset-generator-3" ]; then
+    # Clone the repository
+    git clone https://github.com/peterwillcocks/dataset-generator-3.git
+    cd dataset-generator-3
 else
-    cd dataset-generator
+    cd dataset-generator-3
+    echo "📄 Repository exists, pulling latest changes..."
     git pull
 fi
 
@@ -35,8 +36,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/dataset-generator
-ExecStart=/root/dataset-generator/start_server.sh
+WorkingDirectory=/root/dataset-generator-3
+ExecStart=/root/dataset-generator-3/start_server.sh
 Restart=always
 RestartSec=3
 
@@ -47,13 +48,25 @@ EOF
 echo ""
 echo "✅ RunPod setup complete!"
 echo ""
-echo "🚀 Start server:"
-echo "   cd /root/dataset-generator"
-echo "   ./start_server.sh"
+echo "🚀 Starting server automatically..."
+cd /root/dataset-generator-3
+./start_server.sh &
+SERVER_PID=$!
+sleep 3
+
 echo ""
 echo "🔧 Optional - Enable auto-start service:"
 echo "   systemctl enable lora-server"
 echo "   systemctl start lora-server"
 echo ""
-echo "📡 Server will be available at:"
+echo "📡 Server is running at:"
 echo "   http://localhost:39515/health"
+echo ""
+echo "🔍 Check server status:"
+echo "   ./check_server.sh"
+echo ""
+echo "🔑 For SSH automation setup:"
+echo "   ./setup_ssh_automation.sh"
+echo ""
+echo "✨ Server started with PID: $SERVER_PID"
+echo "   To stop: kill $SERVER_PID"
